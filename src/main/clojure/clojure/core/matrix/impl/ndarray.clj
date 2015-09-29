@@ -234,7 +234,7 @@
   (defn ndarray
     "Returns NDArray with given data, preserving shape of the data"
     [data]
-    (let [mtx (empty-ndarray#t (mp/validate-shape data))]
+    (let [mtx (empty-ndarray#t (mp/get-shape data))]
       (mp/assign! mtx data)
       mtx)))
 
@@ -361,7 +361,7 @@
                   (aset-2d* m i-pivot k (aget-2d* m j k))
                   (aset-2d* m j k swap)))
               (let [swap (aget permutations i-pivot)]
-                (aset permutations i-pivot j)
+                (aset permutations i-pivot (aget permutations j))
                 (aset permutations j swap))
               (aset sign 0 (* -1 (aget sign 0))))
             (c-for [i (inc j) (< i n) (inc i)]
@@ -740,22 +740,20 @@
                         step-row-a (- (aget strides 0)
                                       (* step-col-a ncols))
                         step-col-b (aget strides-b 1)
-                        step-row-b (- (aget strides 0)
-                                      (* step-col-b ncols))
-                        end (+ offset (+ (* nrows step-row-a)
-                                         (* ncols step-col-a)))]
+                        step-row-b (- (aget strides-b 0)
+                                      (* step-col-b ncols))]
                     (loop [i-a offset
                            i-b offset-b
                            row-a 0
                            col-a 0]
-                      (if (< i-a end)
-                        (if (== (aget data i-a) (aget data-b i-b))
-                          (if (< col-a ncols)
+                      (if (< row-a nrows)
+                        (if (< col-a ncols) 
+                          (if (== (aget data i-a) (aget data-b i-b))
                             (recur (+ i-a step-col-a) (+ i-b step-col-b)
                                    row-a (inc col-a))
-                            (recur (+ i-a step-row-a) (+ i-b step-row-b)
+                            false)
+                          (recur (+ i-a step-row-a) (+ i-b step-row-b)
                                    (inc row-a) 0))
-                          false)
                         true)))
                 ;; N-dimensional case
                 (let [end (+ offset

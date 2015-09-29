@@ -1,4 +1,5 @@
 (ns clojure.core.matrix.utils
+  "Namespace for core.matrix utilities. Intended mainly for library and tool writers."
   (:refer-clojure :exclude [update])
   (:require [clojure.reflect :as r])
   (:import [java.util Arrays]))
@@ -24,11 +25,6 @@
        false
        (catch Throwable t#
          true))))
-
-(defmacro error
-  "Throws an error with the provided message(s)"
-  ([& vals]
-    `(throw (RuntimeException. (str ~@vals)))))
 
 ;; useful TODO macro: facilitates searching for TODO while throwing an error at runtime :-)
 (defmacro TODO
@@ -62,12 +58,15 @@
   ([sa sb]
     (cond
       (identical? sa sb) true
-      (= sa sb) true
       (not= (count sa) (count sb)) false
-      (let [sa (seq sa)
-            sb (seq sb)]
-        (every? true? (map == sa sb))) true
-      :else false)))
+      :else 
+        (let [ca (count sa)]
+          (loop [i 0]
+            (if (>= i ca)
+              true
+              (if (== (nth sa i) (nth sb i))
+                (recur (inc i))
+                false)))))))
 
 (defn xor
   "Returns the logical xor of a set of values, considered as booleans"
@@ -168,8 +167,9 @@
       (doseq-indexed [x more i] (aset arr (+ 2 i) x))
       arr)))
 
-(defn base-index-seq-for-shape [sh]
+(defn base-index-seq-for-shape
   "Returns a sequence of all possible index vectors for a given shape, in row-major order"
+  [sh]
   (let [gen (fn gen [prefix rem]
               (if rem
                 (let [nrem (next rem)]
@@ -204,6 +204,11 @@
           b (seq (reverse b))
           r (broadcast-shape* a b)]
       (if r (reverse r) nil))))
+
+(defn can-broadcast
+  "Returns truthy if the first shape a can be broadcast to the shape b"
+  ([from-shape to-shape]
+    (TODO)))
 
 (defmacro c-for
   "C-like loop with nested loops support"

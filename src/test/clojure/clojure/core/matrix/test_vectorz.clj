@@ -20,9 +20,7 @@
 (deftest test-sparse
   (is (instance? INDArray (sparse (matrix :vectorz [[1 2] [3 4]]))))
   (is (instance? INDArray (sparse :vectorz [[1 2] [3 4]])))
-  ;; TODO: enable once we have latest vectorz version with sparse support
-  ;; (is (instance? INDArray (sparse-array :vectorz [[[1 2] [3 4]]])))
-  )
+  (is (instance? INDArray (sparse-array :vectorz [[[1 2] [3 4]]]))))
 
 (deftest test-pm
   (is (string? (pprint/pm (array :vectorz [1 2])))))
@@ -31,3 +29,10 @@
   (compliance/instance-test (array :vectorz [1 2 3]))
   (compliance/instance-test (array :vectorz [[1 2] [3 4]]))
   (compliance/instance-test (array :vectorz [[[1 2] [3 4]] [[5 6] [7 8]]])))
+
+(deftest test-emap-indexed
+  (is (equals [[1 12] 
+               [103 114]] 
+              (emap-indexed 
+                (fn [[i j] x] (+ x (* 100 i) (* 10 j)))
+                (array :vectorz [[1 2] [3 4]])))))

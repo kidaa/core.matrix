@@ -4,7 +4,7 @@
             [clojure.core.matrix.linear :as li]
             [clojure.core.matrix.operators :as op]
             [clojure.core.matrix.implementations :as imp]
-            clojure.core.matrix.examples
+            clojure.core.matrix.demo.examples
             clojure.core.matrix.impl.persistent-vector
             [clojure.core.matrix :refer :all]
             [clojure.core.matrix.utils :refer [error? broadcast-shape]]
@@ -47,7 +47,8 @@
       (is (equals [[0 0] [0 0]] (set-indices a [[0 0] [0 1] [1 0] [1 1]] 0)))
       (let [ma (mutable a)]
         (set-indices! ma [[0 0] [1 1]] [5 6])
-        (is (equals ma [[5 2] [3 6]]))))))
+        (is (equals ma [[5 2] [3 6]]))
+        (is (equals (transpose ma) [[5 3] [2 6]]))))))
 
 
 (deftest test-sel
@@ -122,7 +123,7 @@
     (is (clojure.core/vector? (imp/get-canonical-object :persistent-vector)))
     (is (= :persistent-vector (imp/get-implementation-key []))))
   (testing "non-existent implementation"
-    (is (thrown? Throwable (imp/get-canonical-object :random-fictitious-implementation-key))))
+    (is (nil? (imp/get-canonical-object :random-fictitious-implementation-key))))
   (testing "with-implementation"
     (is (= [1 2] (with-implementation [] (matrix [1 2]))))
     (is (= (class (double-array [1 2]))
@@ -184,9 +185,8 @@
     (is (= [[1 2] [3 4]] (coerce [1] [[1 2] [3 4]])))
     (is (= [[1 2] [3 4]] (coerce [1] '((1 2) (3 4))))))
   (testing "coerce to a number"
-     ;; (is (= 1 (coerce 2 1))) ;; TODO: what should happen here?
-    )
-  )
+     (is (= 1 (coerce 2 1)))
+     (is (equals [1 2] (coerce 2 [1 2])))))
 
 (deftest test-pow
   (let [a (array :persistent-vector [1 2 3])
@@ -198,11 +198,11 @@
       (is (equals [1.0 4.0 9.0] (pow a 2)))
       (is (equals [[1.0 4.0 9.0] [16.0 25.0 36.0] [49.0 64.0 81.0]] (pow m 2))))
     (testing "pow works when base is a scalar and exponent is an array"
-      (is (equals [5.0 25.0 125.0] (pow 5 a))
-          (equals [[2.0 4.0 8.0] [16.0 32.0 64.0] [128.0 256.0 512.0]] (pow 2 m))))
+      (is (equals [5.0 25.0 125.0] (pow 5 a)))
+      (is (equals [[2.0 4.0 8.0] [16.0 32.0 64.0] [128.0 256.0 512.0]] (pow 2 m))))
     (testing "pow works when both the base and the exponent are arrays"
       (is (equals [1.0 4.0 27.0] (pow a a)))
-      (is (equals [[1.0 2.0 3.0] [16.0 25.0 36.0] [343.0 512.0 729.0]] (pow m a))))))
+      (is (equals [[1.0 4.0 27.0] [4.0 25.0 216.0] [7.0 64.0 729.0]] (pow m a))))))
 
 (deftest test-slices
   (testing "rows and columns of clojure vector matrix"
@@ -256,7 +256,7 @@
   (is (error? (scale! [1 2] 2)))
   (is (equals (scale! (mutable-matrix [1 2]) 2) [2 4])))
 
-(deftest test-reshape
+(deftest test-reshape-2
   (is (equals 1 (reshape [1 2 3] [])))
   (is (equals [1 2 3 4] (reshape [[1.0 2.0] [3.0 4.0]] [4])))
   (is (equals [1 2] (reshape [[1.0 2.0] [3.0 4.0]] [2])))
@@ -350,7 +350,7 @@
   (is (equals [2 1] (div 4 [2 4])))
   (is (equals [[1 2] [2 1]] (div [[4 8] [4 4]] [[4 4] [2 4]]))))
 
-(deftest test-pow
+(deftest test-pow-2
   (is (== 8 (pow 2 3)))
   (is (equals [0.5 2] (pow [2 0.5] -1))))
 
@@ -387,9 +387,8 @@
 
 (deftest test-det
   (testing "determinant"
-    ;; (is (== 3 (det 3))) ;; TODO fix for Number
-    ;; (is (== -1 (det [[0 1] [1 0]]))) ;; TODO standard implementation
-    ))
+    (is (== 3 (det [[3]])))
+    (is (== -1 (det [[0 1] [1 0]])))))
 
 (deftest test-join
   (is (= [1 2 3] (join [1 2] 3)))
@@ -407,11 +406,9 @@
   (is (e== [1 4] (diagonal [[1 2] [3 4]]))))
 
 (deftest test-diagonals
-  ;; TODO: enable once diagonal function is complete
-  ;; (is (e== [1 4] (diagonal [[1 2] [3 4]] 0)))
-  ;; (is (e== [2] (diagonal [[1 2] [3 4]] 1)))
-  ;; (is (e== [3] (diagonal [[1 2] [3 4]] -1)))
-  )
+  (is (e== [1 4] (diagonal [[1 2] [3 4]] 0)))
+  (is (e== [2] (diagonal [[1 2] [3 4]] 1)))
+  (is (e== [3] (diagonal [[1 2] [3 4]] -1))))
 
 (deftest test-diagonal
   (is (= [1 4] (diagonal [[1 2] [3 4] [5 6]]   )))
@@ -534,7 +531,7 @@
 (deftest check-examples
   (binding [*out* (StringWriter.)]
     (testing "example code"
-      (clojure.core.matrix.examples/all-examples))))
+      (clojure.core.matrix.demo.examples/all-examples))))
 
 (deftest test-zeros
   (is (zero-matrix? (zero-matrix 3 3)))
@@ -562,7 +559,9 @@
 (deftest test-min-max
   (is (== 1 (emin [2 1 7])))
   (is (== 7 (emax [2 1 7])))
-  (is (== 7 (emax [[4 3 2] [2 1 7] [-1 5 -20]]))))
+  (is (== 7 (emax [[4 3 2] [2 1 7] [-1 5 -20]])))
+  (is (equals [[2 5 2] [4 8 2] [5 6 3]] (clamp [[1 5 1] [4 10 2] [5 6 3]] 2 8)))
+  (is (error? (clamp [[1 2] [3 4]] 6 1))))
 
 (deftest test-predicates
   (testing "scalar predicates"
@@ -609,15 +608,23 @@
   (is (op/== (matrix [5 7])
              (op/+= (mutable (matrix [1 2]))
                     (matrix [4 5]))))
-  (is (op/== (matrix [-4 6]))
+  (is (op/== (matrix [-4 6])
              (op/-= (mutable (matrix [5 8]))
-                    (matrix [9 2])))
+                    (matrix [9 2]))))
   (is (op/== (matrix [6 8])
              (op/*= (mutable (matrix [3 2]))
                     (matrix [2 4]))))
   (is (op/== (matrix [2 0.5])
              (op/div= (mutable (matrix [4 2]))
                     (matrix [2 4])))))
+
+(deftest test-shift
+  (is (equals [1 2 3] (shift [1 2 3] [0])))
+  (is (equals [0 1 2] (shift [1 2 3] [-1])))
+  (is (equals [2 3 0] (shift [1 2 3] [1])))
+  (is (equals [0 0 0] (shift [1 2 3] [4])))
+  (is (equals [[4 0] [0 0]] (shift [[1 2] [3 4]] [1 1])))
+  (is (equals [0 0 0] (shift [1 2 3] [-5]))))
 
 (deftest test-norm
   (is (= 30.0 (li/norm (matrix [[1 2][3 4]]))))

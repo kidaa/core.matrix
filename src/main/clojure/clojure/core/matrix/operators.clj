@@ -1,5 +1,7 @@
 (ns clojure.core.matrix.operators
-  (:refer-clojure :exclude [* - + / vector? ==])
+  "Namespace for core.matrix operators. These operators provide convenient notation for
+   common array operations (e.g. +, *, -=) that replace equivalent functions in clojure.core"
+  (:refer-clojure :exclude [* - + / vector? == < <= > >= not= = min max])
   (:require [clojure.core.matrix :as m]
             [clojure.core.matrix.utils :refer [error]]))
 
@@ -9,22 +11,19 @@
 ;; =====================================================================
 ;; Mathematical operators defined for numerical arrays as applicable
 
-(defn *
-  "Array multiply operator. Uses elementwise multiplication."
-  ([a] a)
-  ([a b]
-    (m/mul a b))
-  ([a b & more]
-    (reduce m/mul (m/mul a b) more)))
+(def 
+  ^{:doc "Array multiply operator. Uses elementwise multiplication."}
+  *
+  m/mul)
 
-(defn **
-  "array exponent operator. Raises every element in matrix a to the given exponent.
-   Equivalent to clojure.core.matrix/pow."
-  ([a exponent]
-    (m/pow a exponent)))
+(def **
+  ^{:doc "Array exponent operator. Raises every element in matrix a to the given exponent.
+   Equivalent to clojure.core.matrix/pow."}
+  m/pow)
 
 (defn +
   "Array addition operator. Equivalent to clojure.core.matrix/add."
+  ([] (m/add))
   ([a] a)
   ([a b]
     (if (and (number? a) (number? b))
@@ -56,21 +55,23 @@
   ([a b] (m/equals a b))
   ([a b & more] (reduce (fn [r m] (and r (== a m))) (== a b) more)))
 
-(defmacro Σ
-  "Computes array summation over a range of values for one or more variables"
-  ([[sym vals & more :as bindings] exp]
-    (cond
-      (odd? (count bindings)) (error "Summation requires an even number of forms in binding vector")
-      (seq more) `(Σ [~sym ~vals] (Σ [~@more] ~exp))
-      :else `(reduce m/add (map (fn [i#] (let [~sym i#] ~exp)) ~vals)))))
-
-(defmacro Π
-  "Computes array products over a range of values for one or more variables"
-  ([[sym vals & more :as bindings] exp]
-    (cond
-      (odd? (count bindings)) (error "Summation requires an even number of forms in binding vector")
-      (seq more) `(Σ [~sym ~vals] (Σ [~@more] ~exp))
-      :else `(reduce m/mul (map (fn [i#] (let [~sym i#] ~exp)) ~vals)))))
+;; comment these out for now, appear to be causing build issues, see #230
+;
+;(defmacro Σ
+;  "Computes array summation over a range of values for one or more variables"
+;  ([[sym vals & more :as bindings] exp]
+;    (cond
+;      (odd? (count bindings)) (error "Summation requires an even number of forms in binding vector")
+;      (seq more) `(Σ [~sym ~vals] (Σ [~@more] ~exp))
+;      :else `(reduce m/add (map (fn [i#] (let [~sym i#] ~exp)) ~vals)))))
+;
+;(defmacro Π
+;  "Computes array products over a range of values for one or more variables"
+;  ([[sym vals & more :as bindings] exp]
+;    (cond
+;      (odd? (count bindings)) (error "Summation requires an even number of forms in binding vector")
+;      (seq more) `(Σ [~sym ~vals] (Σ [~@more] ~exp))
+;      :else `(reduce m/mul (map (fn [i#] (let [~sym i#] ~exp)) ~vals)))))
 
 ;; ===================================================
 ;; inplace operators
@@ -94,3 +95,47 @@
   "Inplace matrix division operator"
   ([a] a)
   ([a b] (m/div! a b)))
+
+;; =====================================================================
+;; Comparison operators
+(defn <
+  "Element-wise less-than operator."
+  ([a b] (m/lt a b)))
+
+(defn <=
+  "Element-wise less-than-or-equal-to operator."
+  ([a b] (m/le a b)))
+
+(defn >
+  "Element-wise greater-than operator."
+  ([a b] (m/gt a b)))
+
+(defn >=
+  "Element-wise less-than-or-equal-to operator."
+  ([a b] (m/ge a b)))
+
+(defn not=
+  "Element-wise not-equal to operator."
+  ([a b] (m/ne a b)))
+
+(defn =
+  "Element-wise equal to operator."
+  ([a b] (m/eq a b)))
+
+(defn min
+  "Computes the element-wise min of arrays"
+  ([a]
+    a)
+  ([a b]
+    (m/eif (m/sub a b) b a))
+  ([a b & more]
+    (reduce min (min a b) more)))
+
+(defn max 
+  "Computes the element-wise max of arrays"
+  ([a]
+    a)
+  ([a b]
+    (m/eif (m/sub a b) a b))
+  ([a b & more]
+    (reduce min (min a b) more)))

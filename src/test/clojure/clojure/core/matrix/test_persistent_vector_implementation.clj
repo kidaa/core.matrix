@@ -6,6 +6,7 @@
             [clojure.core.matrix.compliance-tester :as compliance]
             [clojure.core.matrix :refer :all]
             [clojure.core.matrix.utils :refer [error?]]
+            [clojure.core.matrix.protocols :as mp]
             [clojure.test :refer :all]))
 
 ;; Tests for the implementation of core.matrix on Clojure persistent vectors
@@ -93,21 +94,26 @@
 
 (deftest test-functional-op
   (testing "map"
-    (is (= 2 (emap inc 1)))
-    (is (= [1 2] (emap inc [0 1])))
-    (is (= [1 2] (emap + [0 1] [1 1])))
-    (is (= [3 5] (emap + [0 1] [1 1] [0 0] [2 3])))
-    (is (= [[2.0 0.0] [0.0 2.0]] (emap #(* 2 %) [[1.0 0.0] [0.0 1.0]])))))
+    (is (equals 2 (emap inc 1)))
+    (is (equals [1 2] (emap inc [0 1])))
+    (is (equals [1 2] (emap + [0 1] [1 1])))
+    (is (equals [3 5] (emap + [0 1] [1 1] [0 0] [2 3])))
+    (is (equals [[2.0 0.0] [0.0 2.0]] (emap #(* 2 %) [[1.0 0.0] [0.0 1.0]]))))
+  (testing "map-indexed"
+    (is (equals 2 (emap-indexed #(+ (reduce + %1) (inc %2)) 1)))
+    (is (equals [1 3] (emap-indexed #(+ (reduce + %1) (inc %2)) [0 1])))
+    (is (equals [1 3] (emap-indexed #(apply + (reduce + %1) %&) [0 1] [1 1])))
+    (is (equals [3 6] (emap-indexed #(apply + (reduce + %1) %&) [0 1] [1 1] [0 0] [2 3])))))
 
 (deftest test-matrix-multiply
   (testing "matrix multiplication"
-    (is (= [[5 10] [15 20]] (mmul [[1 2] [3 4]] 5)))
-    (is (= [[1 0] [2 2] [5 0]] (mmul [[1 0] [0 2] [5 0]] [[1 0] [1 1]])))
-    (is (= [[1 2] [3 4]] (mmul [[1 2] [3 4]] [[1 0] [0 1]])))
-    (is (= [[5]] (mmul [[1 2]] [[1] [2]])))
-    (is (= [7 10] (mmul [1 2] [[1 2] [3 4]]))))
+    (is (equals [[5 10] [15 20]] (mmul [[1 2] [3 4]] 5)))
+    (is (equals [[1 0] [2 2] [5 0]] (mmul [[1 0] [0 2] [5 0]] [[1 0] [1 1]])))
+    (is (equals [[1 2] [3 4]] (mmul [[1 2] [3 4]] [[1 0] [0 1]])))
+    (is (equals [[5]] (mmul [[1 2]] [[1] [2]])))
+    (is (equals [7 10] (mmul [1 2] [[1 2] [3 4]]))))
   (testing "elementwise multiplication"
-    (is (= [2 4] (mul [1 2] 2)))))
+    (is (equals [2 4] (mul [1 2] 2)))))
 
 (deftest test-division
   (testing "unary division"
@@ -117,9 +123,9 @@
 
 (deftest test-transform
   (testing "matrix transform"
-    (is (= [5 10] (transform [[1 0] [0 2]] [5 5]))))
+    (is (equals [5 10] (transform [[1 0] [0 2]] [5 5]))))
   (testing "function transform"
-    (is (= [1 2] (transform (fn [_] [1 2]) [5 5])))))
+    (is (equals [1 2] (transform (fn [_] [1 2]) [5 5])))))
 
 (deftest test-nested-implementation
   (testing "nested double arrays"
@@ -131,19 +137,17 @@
 
 (deftest test-emap
   (testing "basic"
-    (equals [2 3] (emap inc [1 2])))
+    (is (equals [2 3] (emap inc [1 2]))))
   (testing "nested implementations"
-    (equals [[2 3]] (emap inc [(double-array [1 2])]))
-    (equals [[2 3]] (emap inc [[(wrap/wrap-scalar 1) (wrap/wrap-scalar 2)]]))))
+    (is (equals [[2 3]] (emap inc [(double-array [1 2])])))))
 
 (deftest test-eseq
   (testing "basic"
-    (= [2 3] (eseq [2 3])))
+    (is (= [2 3] (eseq [2 3]))))
   (testing "nested implementations"
-    (= [1 2] (eseq [[1 2]]))
-    (= [1 2] (eseq [[1] [2]]))
-    (= [1 2] (eseq [(double-array [1 2])]))
-    (= [1 2] (eseq [[(wrap/wrap-scalar 1) (wrap/wrap-scalar 2)]]))))
+    (is (= [1 2] (eseq [[1 2]])))
+    (is (= [1 2] (eseq [[1] [2]])))
+    (is (= [1.0 2.0] (eseq [(double-array [1 2])])))))
 
 (deftest test-contained-scalar-array
   (let [a [(scalar-array 1) 2]]
@@ -195,11 +199,26 @@
     (testing "add row j to i and replace i with the result"
       (is (= (matrix [[3 3] [1 1]]) (add-row (matrix [[1 1] [1 1]]) 0 1 2)))))
 
+(deftest test-native
+  (is (nil? (native [1 2 3])))
+  (is (not (native? [1 2 3]))))
+
 (deftest test-bad-shapes
   (is (error? (array [1 [2 3]])))
   (is (error? (array [[1 2] [2 3 4]])))
   (is (error? (array [[1 2 3 4] [2 3 4]])))
   (is (error? (array [[1 2 3 4] 5]))))
+
+(deftest test-select
+  (let [m [[0 1 2 3] [4 5 6 7] [8 9 10 11]]]
+    (testing "proper select usage behaviour"
+      (is (= (select m :all :all) m))
+      (is (= (select m :all 0) [0 4 8]))
+      (is (= (select m [0 2] [1 3]) [[1 3] [9 11]])))
+    (testing "invalid argument to mp/select"
+      (is (thrown? RuntimeException (mp/select m [[0]]))))
+    (testing "invlaid argument to select"
+      (is (thrown? RuntimeException (select m nil))))))
 
 ;; run complicance tests
 

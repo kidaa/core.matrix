@@ -1,6 +1,10 @@
 core.matrix
 ===========
 
+[![Clojars Project](http://clojars.org/net.mikera/core.matrix/latest-version.svg)](http://clojars.org/net.mikera/core.matrix)
+
+[![Build Status](https://travis-ci.org/mikera/core.matrix.png?branch=master)](https://travis-ci.org/mikera/core.matrix) [![Dependency Status](https://www.versioneye.com/user/projects/54deecf4271c9379ed000042/badge.svg?style=flat)](https://www.versioneye.com/user/projects/54deecf4271c9379ed000042)
+
 core.matrix provides array programming as a language extension for Clojure, with a focus on numerical computing.
 
 The central objective of `core.matrix` is to make matrix and array programming
@@ -17,34 +21,25 @@ idiomatic, productive, elegant and fast in the Clojure environment.
 ;; Note: nested Clojure vectors can be used as matrices
 ```
 
-Key goals of `core.matrix`:
+Key goals of *core.matrix*:
 
  - Provide a clear, standard API / abstraction for **matrix and array programming** in Clojure
  - Enable **pluggable** support for different underlying matrix library implementations
- - Provide a general purpose **n-dimensional array** implementation (NDArray)
- - Provide a **foundation** library for other projects (e.g. Incanter)
+ - Provide general purpose **n-dimensional array** implementations 
+ - Provide a **foundation** for other projects in the ecosystem (e.g. Incanter)
  - Enable **high performance** numerical computing
-
-### Getting Started
-
-To use `core.matrix`, you can get the latest released version from Clojars:
-
- - https://clojars.org/net.mikera/core.matrix
-
-For code examples see:
-
- - https://github.com/mikera/core.matrix/blob/master/src/main/clojure/clojure/core/matrix/examples.clj
+ - Allow **idiomatic** Clojure coding for numerical code
 
 ### Documentation
+
+For `core.matrix` documentation and examples see the Wiki:
+
+ - https://github.com/mikera/core.matrix/wiki
 
 For a general introduction, the slide and video from the 2013 Clojure Conj talk are available here:
 
  - http://www.slideshare.net/mikeranderson/2013-1114-enter-thematrix
  - http://www.youtube.com/watch?v=_h9TLJtjSJo
-
-For `core.matrix` documentation and further examples see the Wiki:
-
- - https://github.com/mikera/core.matrix/wiki
 
 ### Status
 
@@ -61,7 +56,7 @@ so users should be prepared to deal with potential breaking changes when updatin
 
 The plan is to become an official Clojure Contrib language extension once the API has been well tested.
 
-[![Build Status](https://travis-ci.org/mikera/core.matrix.png?branch=master)](https://travis-ci.org/mikera/core.matrix)
+
 
 ### Contributing
 

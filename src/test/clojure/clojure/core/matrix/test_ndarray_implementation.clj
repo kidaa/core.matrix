@@ -136,11 +136,28 @@
     (assign! m vm)
     (is (= (eseq m) (range 8)))))
 
+(deftest test-3d-emap-indexed
+  (let [m (empty-ndarray [2 2 2])
+        vm [[[0 1] [2 3]] [[4 5] [6 7]]]]
+    (assign! m vm)
+    (is (equals [[[0 1] [2 3]] [[4 5] [6 7]]] (emap-indexed (fn [_     x] x) m)))
+    (is (equals [[[0 0] [0 0]] [[1 1] [1 1]]] (emap-indexed (fn [[i _ _] _] i) m)))
+    (is (equals [[[0 0] [1 1]] [[0 0] [1 1]]] (emap-indexed (fn [[_ j _] _] j) m)))
+    (is (equals [[[0 1] [0 1]] [[0 1] [0 1]]] (emap-indexed (fn [[_ _ k] _] k) m)))))
+
 (deftest test-object-emap
   (let [m (new-array :ndarray [2 2])
         vecs (for [i (range 4)] [i (inc i)])]
     (assign-array! m (object-array vecs))
     (is (equals [[2 2] [2 2]] (emap count m)))))
+
+(deftest test-object-emap-indexed
+  (let [m (new-array :ndarray [2 2])
+        vecs (for [i (range 4)] [i (inc i)])]
+    (assign-array! m (object-array vecs))
+    (is (equals [[2 2] [2 2]] (emap-indexed #(count %2) m)))
+    (is (equals [[0 0] [1 1]] (emap-indexed (fn [[i _] _] i) m)))
+    (is (equals [[0 1] [0 1]] (emap-indexed (fn [[_ j] _] j) m)))))
 
 #_(deftest test-helper-functions
   (is (== 35 (calc-index [1 5] (long-array [100 30]))))
@@ -165,7 +182,7 @@
   ;(is (= 0 (gen/default-value :ndarray-long)))   ;; TODO add back when NDArray loading is fixed
   )
 
-(deftest regressions
+(deftest regressions-2
   (is (= 3 (-> [[1 2] [3 4]]
                array
                transpose
@@ -175,6 +192,19 @@
   (is (equals [10] (add-product! (array :ndarray [4]) [2] [3])))
   (is (equals [30 70 110] (mmul (array :ndarray-double [[1 2 3 4] [5 6 7 8] [9 10 11 12]]) [1 2 3 4])))
   (is (equals [10] (add-product (array :ndarray [4]) [2] [3]))))
+
+(deftest test-regression-239
+  (let [m (array :ndarray [[1 2] [3 4]])]
+    (is (equals m (coerce m (array :vectorz [[1 2] [3 4]]))))))
+
+(deftest test-regression-245
+  ;; problem with equality testing
+  (is (e== (array :ndarray [[1 0 0] [0 0 2] ]) (array :ndarray [[1 0 0] [0 0 2]])))
+  (is (not (e== (array :ndarray [[1 0 0] [0 0 0] ]) (array :ndarray [[1 0 0] [0 9 0]])))))
+
+(deftest test-inverse
+  (is (e== (invert-double (ndarray-double [[0 1 0] [1 1 0] [1 -1 -1]])) 
+           (ndarray-double [[-1.0,1.0,0.0],[1.0,-0.0,0.0],[-2.0,1.0,-1.0]]))))
 
 (deftest ndarray-test
   (ct/test-ndarray-implementation (empty-ndarray [3 3])))
@@ -186,3 +216,5 @@
 (deftest compliance-test-primitives
   (doseq [m (get-primitive-ndarrays)]
     (ct/compliance-test m)))
+
+
